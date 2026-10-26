@@ -8,7 +8,7 @@ from collections import OrderedDict
 from datetime import datetime
 
 import numpy as np
-from pyopenms import IdXMLFile
+from pyopenms import IdXMLFile, PeptideIdentificationList
 
 from pmultiqc.modules.common.file_utils import file_prefix
 from pmultiqc.modules.common.histogram import Histogram
@@ -106,9 +106,8 @@ class IdXMLReader(BaseParser):
             )
         )
         protein_ids: list = []
-        peptide_ids: list = []
-        # peptide_ids = PeptideIdentificationList()     # pyopenms >= 3.5.0
-        IdXMLFile().load(raw_id, protein_ids, peptide_ids)
+        peptide_ids = PeptideIdentificationList()
+        IdXMLFile().load(str(raw_id), protein_ids, peptide_ids)
         raw_id_name = file_prefix(raw_id)
 
         identified_num = self._count_identified(peptide_ids, remove_decoy)
@@ -161,8 +160,8 @@ class IdXMLReader(BaseParser):
                 )
             )
             protein_ids = []
-            peptide_ids = []
-            IdXMLFile().load(raw_id, protein_ids, peptide_ids)
+            peptide_ids = PeptideIdentificationList()
+            IdXMLFile().load(str(raw_id), protein_ids, peptide_ids)
             raw_id_name = file_prefix(raw_id)
             labels["consensus_label"].append({"name": raw_id_name, "ylab": "Counts"})
             consensus_support = Histogram(

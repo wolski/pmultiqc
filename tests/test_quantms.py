@@ -1,7 +1,12 @@
 import logging
 import os
+from pathlib import Path
 
 import pytest
+from pyopenms import (
+    AASequence, IdXMLFile, PeptideHit, PeptideIdentification,
+    PeptideIdentificationList, ProteinIdentification,
+)
 
 from pmultiqc.modules.common.ms.idxml import IdXMLReader
 
@@ -60,3 +65,28 @@ class TestQuantMS:
             )
             assert "num_quant_psms" in run_data
             assert "num_quant_peps" in run_data
+
+    def test_consensus_idxml_reader_uses_native_peptide_container(self, tmp_path: Path) -> None:
+        """Read a real consensus idXML round trip with the pyOpenMS 3.5 container."""
+        protein = ProteinIdentification()
+        protein.setIdentifier("synthetic")
+        protein.setSearchEngine("Comet")
+        proteins = [protein]
+        hit = PeptideHit()
+        hit.setSequence(AASequence.fromString("PEPTIDEK"))
+        hit.setCharge(2)
+        hit.setMetaValue("consensus_support", 2)
+        hit.setMetaValue("target_decoy", "target")
+        peptide = PeptideIdentification()
+        peptide.setIdentifier("synthetic")
+        peptide.setHits([hit])
+        selected = PeptideIdentificationList()
+        selected.push_back(peptide)
+        target = tmp_path / "consensus.idXML"
+        IdXMLFile().store(str(target), proteins, selected)
+        reader = IdXMLReader(
+            file_paths=[target], mzml_table={}, ml_spec_ident_final={},
+            mzml_peptide_map={}, **HIST_RANGES,
+        )
+        reader.parse()
+        assert reader.search_engine["consensus_support"]
